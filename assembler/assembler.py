@@ -42,10 +42,14 @@ def second_pass(lines, symbol_table):
         if symbol.isdigit():
             address = int(symbol)
         else:
-            if symbol not in symbol_table["RAM addresses"]:
+            if symbol in symbol_table["RAM addresses"]:
+                address = symbol_table["RAM addresses"][symbol]
+            elif symbol in symbol_table["ROM addresses"]:
+                address = symbol_table["ROM addresses"][symbol]
+            else: # symbol is a variable
                 symbol_table["RAM addresses"][symbol] = next_variable_address
                 next_variable_address += 1
-            address = symbol_table["RAM addresses"][symbol]
+                address = symbol_table["RAM addresses"][symbol]
         address = format(address, '016b')
         return address
     
@@ -95,7 +99,7 @@ def second_pass(lines, symbol_table):
             binary_code.append(translate_a_instruction(line))
         else:
             binary_code.append(translate_c_instruction(line))
-    return binary_code, symbol_table["RAM addresses"]
+    return binary_code
 
 def write_file(filename, binary_code):
     with open(filename, 'w') as file:
@@ -115,8 +119,7 @@ def main():
     lines = read_file(input_filename)
     parsed_lines = parse_lines(lines)
     symbol_table = first_pass(parsed_lines)
-    binary_code, symbol_table = second_pass(parsed_lines, symbol_table)
-    print(symbol_table)
+    binary_code = second_pass(parsed_lines, symbol_table)
     write_file(output_filename, binary_code)
 
 if __name__ == "__main__":

@@ -16,9 +16,12 @@ def parse_lines(lines):
 class CodeWriter:
     def __init__(self, output_file):
         self.file = open(output_file, 'w')
+        self.filename = output_file
         self.label_counter = 0
 
     def write_arithmetic(self, command):
+        
+        self.file.write(f'// {command}\n')
 
         def unique_label():
             self.label_counter += 1
@@ -28,6 +31,12 @@ class CodeWriter:
             self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M+D\n')
         elif command == "sub":
             self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M-D\n')
+        elif command == "and":
+            self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M&D\n')
+        elif command == "or":
+            self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M|D\n')
+        elif command == "not":
+            self.file.write('@SP\nA=M-1\nM=!M\n')
         elif command == "neg":
             self.file.write('@SP\nA=M-1\nM=-M\n')
         elif command == "eq":
@@ -54,15 +63,10 @@ class CodeWriter:
                 f'@SP\nA=M-1\nM=0\n@{label_end}\n0;JMP\n'
                 f'({label_true})\n@SP\nA=M-1\nM=-1\n({label_end})\n'
             )
-        elif command == "and":
-            self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M&D\n')
-        elif command == "or":
-            self.file.write('@SP\nAM=M-1\nD=M\nA=A-1\nM=M|D\n')
-        elif command == "not":
-            self.file.write('@SP\nA=M-1\nM=!M\n')
 
     def write_push_pop(self, command, segment, index):
         index = int(index)
+        self.file.write(f'// {command} {segment} {index}\n')
         if command == 'push':
             if segment == 'constant':
                 self.file.write(f'@{index}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n')
@@ -78,7 +82,7 @@ class CodeWriter:
                 )
             elif segment == 'static':
                 self.file.write(
-                    f'@{self.file}.{index}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n'
+                    f'@{self.filename}.{index}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n'
                 )
             elif segment == 'temp':
                 self.file.write(
@@ -107,7 +111,7 @@ class CodeWriter:
                 )
             elif segment == 'static':
                 self.file.write(
-                    f'@SP\nAM=M-1\nD=M\n@{self.file}.{index}\nM=D\n'
+                    f'@SP\nAM=M-1\nD=M\n@{self.filename}.{index}\nM=D\n'
                 )
             elif segment == 'temp':
                 self.file.write(
@@ -127,7 +131,7 @@ class CodeWriter:
         for line in lines:
             line = line.split()
             if len(line) == 1:
-                self.write_arithmetic(line)
+                self.write_arithmetic(line[0])
             else:
                 self.write_push_pop(line[0], line[1], line[2])
 

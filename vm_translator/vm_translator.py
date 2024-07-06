@@ -19,7 +19,7 @@ class CodeWriter:
         self.filename = output_file
         self.label_counter = 0
 
-    def write_arithmetic(self, command):
+    def _write_arithmetic(self, command):
         
         self.file.write(f'// {command}\n')
 
@@ -64,7 +64,7 @@ class CodeWriter:
                 f'({label_true})\n@SP\nA=M-1\nM=-1\n({label_end})\n'
             )
 
-    def write_push_pop(self, command, segment, index):
+    def _write_push_pop(self, command, segment, index):
         index = int(index)
         self.file.write(f'// {command} {segment} {index}\n')
         if command == 'push':
@@ -127,13 +127,55 @@ class CodeWriter:
                         f'@SP\nAM=M-1\nD=M\n@THAT\nM=D\n'
                     )
 
+    def _write_label(self, label):
+        self.file.write(f'({label})\n')
+
+    def _write_goto(self, label):
+        self.file.write(f'@{label}\n0;JMP\n')
+
+    def _write_if_goto(self, label):
+        self.file.write(f'@SP\nAM=M-1\nD=M\n@{label}\nD;JNE\n')
+
+    def _write_call(self, function_name, num_args):
+        num_args = int(num_args)
+        return_address = f'{self.filename}$ret.{self.label_counter}'
+        self.label_counter += 1
+        self.file.write(f'@{return_address}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n') # push return address
+        self.file.write('@LCL\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n') # push LCL
+        self.file.write('@ARG\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n') # push ARG
+        self.file.write('@THIS\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n') # push THIS
+        self.file.write('@THAT\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n') # push THAT
+        self.file.write(f'@{num_args}\nD=A\n@5\nD=D+A\n@SP\nD=M-D\n@ARG\nM=D\n') # ARG = SP - 5 - nargs
+        self.file.write('@SP\nD=M\n@LCL\nM=D\n') # LCL = SP
+        self._write_goto(function_name)
+        self._write_label(return_address)
+
+    def _write_function(self, function_name, num_vars):
+        self._write_label(function_name)
+        for _ in range(num_vars):
+            self._write_push_pop('push', 'constant', '0')
+
+    def _write_return(self):
+        self.file.write('@LCL\nD=M\n@R13\nM=D\n') # end_frame (R13) = LCL
+        self.file.write('@5\nA=D-A\nD=M\n@R14\nM=D\n') # return_address (R14) = *(end_frame - 5)
+        self.file.write('@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n') # *ARG = pop()
+        self.file.write('@ARG\nD=M+1\n@SP\nM=D\n') # SP = ARG + 1
+        self.file.write('@R13\nAM=M-1\nD=M\n@THAT\nM=D\n') # THAT = *(end_frame - 2)
+        self.file.write('@R13\nAM=M-1\nD=M\n@THIS\nM=D\n') # THIS = *(end_frame - 1)
+        self.file.write('@R13\nAM=M-1\nD=M\n@ARG\nM=D\n') # ARG = *(end_frame - 3)
+        self.file.write('@R13\nAM=M-1\nD=M\n@LCL\nM=D\n') # LCL = *(end_frame - 4)
+        self.file.write('@R14\nA=M\n0;JMP\n') # goto return_address
+
     def write(self, lines):
         for line in lines:
             line = line.split()
             if len(line) == 1:
-                self.write_arithmetic(line[0])
+                pass
+            elif len(line) == 2:
+                pass
             else:
-                self.write_push_pop(line[0], line[1], line[2])
+                pass
+                
 
     def close(self):
         self.file.close()

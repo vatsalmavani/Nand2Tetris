@@ -53,16 +53,16 @@ class Tokenizer:
     def advance1(self, expected_token):
         self.current_token_index += 1
         token = self.get_token()
-        if expected_token == "IDENTIFIER":
+        if expected_token == "#IDENTIFIER":
             if self._is_valid_var_name(token):
                 return token
             raise SyntaxError(f"Invalid variable name: '{token}'")
-        if expected_token == "DATATYPE":
+        if expected_token == "#DATATYPE":
             # TODO: make sure that datatype is from set of classnames
             if self._is_valid_datatype(token):
                 return token
             raise SyntaxError(f"Invalid data type: '{token}'")
-        if expected_token == 'SUBROUTINE_RETURN_TYPE':
+        if expected_token == '#SUBROUTINE_RETURN_TYPE':
             if self._is_valid_return_type(token):
                 return token
             raise SyntaxError(f"Invalid return type: '{token}")
@@ -77,3 +77,15 @@ class Tokenizer:
             if token == expected_token:
                 return token
         raise SyntaxError(f"Unexpected token: '{token}'")
+
+    def token_type(self, token):
+        if token in self.KEYWORDS:
+            return 'KEYWORD'
+        elif token in self.SYMBOLS:
+            return 'SYMBOL'
+        elif token.isdigit():
+            return 'INT_CONST'
+        elif token.startswith('"'):
+            return 'STRING_CONST'
+        else:
+            return 'IDENTIFIER'

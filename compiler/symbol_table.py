@@ -17,7 +17,7 @@ class SymbolTable:
     def define(self, datatype, name, kind):
         if kind in ['static', 'field']:
             self.class_scope[name] = (datatype, kind, self.indexes[kind])
-        elif kind in ['var', 'let']:
+        elif kind in ['local', 'argument']:
             self.subroutine_scope[name] = (datatype, kind, self.indexes[kind])
         self.indexes[kind] += 1
     
